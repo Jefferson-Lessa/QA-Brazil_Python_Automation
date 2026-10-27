@@ -1,11 +1,21 @@
+import time
 import data
 import helpers
 
+from pages import UrbanRoutesPage
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 class TestUrbanRoutes:
-
     @classmethod
     def setup_class(cls):
+        from selenium.webdriver import DesiredCapabilities
+        capabilities = DesiredCapabilities.CHROME
+        capabilities["goog:loggingPrefs"] = {'performance': 'ALL'}
+        cls.driver = webdriver.Chrome()
+
         """Verifica se o servidor Urban Routes está acessível."""
         if helpers.is_url_reachable(data.URBAN_ROUTES_URL):
             print("Conectado ao servidor Urban Routes.")
@@ -14,12 +24,21 @@ class TestUrbanRoutes:
                 "Não foi possível conectar ao Urban Routes. "
                 "Verifique se o servidor está ligado e em execução."
             )
+    def setup_method(self, method):
+        self.driver.get(data.URBAN_ROUTES_URL)
+        self.page = UrbanRoutesPage(self.driver)
+
+    def _start_comfort_flow(self):
+        """Inicializa o comforto flow."""
+        self.page.enter_locations(data.ADDRESS_FROM, data.ADDRESS_TO)
+
 
     def test_set_route(self):
-        """Define a rota para o teste."""
-        print("Função criada para definir a rota.")
-        #Adicionar em S8
-        pass
+        self.page.enter_locations(data.ADDRESS_FROM, data.ADDRESS_TO)
+        assert self.page.get_from_location() == data.ADDRESS_FROM
+        assert self.page.get_to_location() == data.ADDRESS_TO
+
+
 
     def test_select_plan(self):
         """Seleciona o plano de viagem."""
@@ -69,4 +88,8 @@ class TestUrbanRoutes:
         print("Função criada para verificar o modelo do carro.")
         #Adicionar em S8
         pass
+
+    @classmethod
+    def teardown_class(cls):
+        cls.driver.quit()
 
