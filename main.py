@@ -1,95 +1,77 @@
-import time
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+
 import data
 import helpers
-
 from pages import UrbanRoutesPage
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+
 
 class TestUrbanRoutes:
+    driver = None
+
     @classmethod
     def setup_class(cls):
-        from selenium.webdriver import DesiredCapabilities
-        capabilities = DesiredCapabilities.CHROME
-        capabilities["goog:loggingPrefs"] = {'performance': 'ALL'}
-        cls.driver = webdriver.Chrome()
-
-        """Verifica se o servidor Urban Routes está acessível."""
         if helpers.is_url_reachable(data.URBAN_ROUTES_URL):
-            print("Conectado ao servidor Urban Routes.")
+            print("Conectado ao servidor Urban Routes")
         else:
-            print(
-                "Não foi possível conectar ao Urban Routes. "
-                "Verifique se o servidor está ligado e em execução."
-            )
-    def setup_method(self, method):
+            print("Não foi possível conectar ao Urban Routes. Verifique se o servidor está ligado.")
+
+        options = Options()
+        options.set_capability("goog:loggingPrefs", {"performance": "ALL"})
+        cls.driver = webdriver.Chrome(options=options)
+        cls.driver.maximize_window()
+
+    def setup_method(self):
         self.driver.get(data.URBAN_ROUTES_URL)
-        self.page = UrbanRoutesPage(self.driver)
+        self.routes_page = UrbanRoutesPage(self.driver)
 
-    def _start_comfort_flow(self):
-        """Inicializa o comforto flow."""
-        self.page.enter_locations(data.ADDRESS_FROM, data.ADDRESS_TO)
-
+    def _prepare_comfort_order(self):
+        self.routes_page.set_route(data.ADDRESS_FROM, data.ADDRESS_TO)
+        self.routes_page.click_call_taxi_button()
+        self.routes_page.select_comfort_plan()
 
     def test_set_route(self):
-        self.page.enter_locations(data.ADDRESS_FROM, data.ADDRESS_TO)
-        assert self.page.get_from_location() == data.ADDRESS_FROM
-        assert self.page.get_to_location() == data.ADDRESS_TO
-
-
+        self.routes_page.set_route(data.ADDRESS_FROM, data.ADDRESS_TO)
+        assert self.routes_page.get_from() == data.ADDRESS_FROM
+        assert self.routes_page.get_to() == data.ADDRESS_TO
 
     def test_select_plan(self):
-        """Seleciona o plano de viagem."""
-        print("Função criada para selecionar o plano.")
-        #Adicionar em S8
-        pass
+        self._prepare_comfort_order()
+        assert self.routes_page.get_current_selected_plan() == 'Comfort'
 
     def test_fill_phone_number(self):
-        """Preenche o número de telefone."""
-        print("Função criada para preencher o telefone.")
-        #Adicionar em S8
-        pass
+        self._prepare_comfort_order()
+        self.routes_page.set_phone(data.PHONE_NUMBER)
+        assert self.routes_page.get_phone() == data.PHONE_NUMBER
 
     def test_fill_card(self):
-        """Preenche os dados do cartão."""
-        print("Função criada para preencher o cartão.")
-        #Adicionar em S8
-        pass
+        self._prepare_comfort_order()
+        self.routes_page.set_card(data.CARD_NUMBER, data.CARD_CODE)
+        assert self.routes_page.get_current_payment_method() == 'Cartão'
 
     def test_comment_for_driver(self):
-        """Adiciona um comentário para o motorista."""
-        print("Função criada para adicionar comentário ao motorista.")
-        #Adicionar em S8
-        pass
+        self._prepare_comfort_order()
+        self.routes_page.set_message_for_driver(data.MESSAGE_FOR_DRIVER)
+        assert self.routes_page.get_message_for_driver() == data.MESSAGE_FOR_DRIVER
 
     def test_order_blanket_and_handkerchiefs(self):
-        """Solicita cobertor e lenços."""
-        print("Função criada para solicitar cobertor e lenços.")
-        #Adicionar em S8
-        pass
+        self._prepare_comfort_order()
+        self.routes_page.click_blanket_and_handkerchiefs()
+        assert self.routes_page.is_blanket_and_handkerchiefs_selected() is True
 
     def test_order_2_ice_creams(self):
-        """Adiciona dois sorvetes ao pedido."""
-        number_of_ice_creams = 2
-
-        for count in range(number_of_ice_creams):
-            print(
-                f"Adicionando sorvete {count + 1} "
-                f"de {number_of_ice_creams}."
-            )
-
-        #Adicionar em S8
-        pass
+        self._prepare_comfort_order()
+        self.routes_page.add_ice_cream(2)
+        assert self.routes_page.get_ice_cream_amount() == 2
 
     def test_car_search_model_appears(self):
-        """Verifica se o modelo do carro aparece."""
-        print("Função criada para verificar o modelo do carro.")
-        #Adicionar em S8
-        pass
+        self._prepare_comfort_order()
+        self.routes_page.set_phone(data.PHONE_NUMBER)
+        self.routes_page.set_card(data.CARD_NUMBER, data.CARD_CODE)
+        self.routes_page.set_message_for_driver(data.MESSAGE_FOR_DRIVER)
+        self.routes_page.click_order_taxi_button()
+        assert self.routes_page.get_order_popup().is_displayed()
 
     @classmethod
     def teardown_class(cls):
         cls.driver.quit()
-
